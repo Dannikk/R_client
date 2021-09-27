@@ -1,3 +1,9 @@
+library(httr)
+library(rlist)
+library(rjson)
+library(jsonlite)
+library(dplyr)
+library(DT)
 library(shiny)
 
 
@@ -22,8 +28,18 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-  config <- rjson::fromJSON(file="config.json")
-  db_url <- config$db_url
+  # config <- rjson::fromJSON(file="config.json")
+  # db_url <- config$db_url
+  db_url <- "https://patients-server.herokuapp.com/patients/"
+
+  get_data <- function(db_url){
+    resp = GET(db_url)
+    if (http_type(resp) != "application/json") {
+      stop("API did not return json", call. = FALSE)
+    }
+    pars <- jsonlite::fromJSON(content(resp, "text"), flatten = TRUE)
+    return(pars)
+  }
 
 
   observeEvent(input$add, {
@@ -49,10 +65,10 @@ server <- function(input, output, session) {
       output$result <- renderText({
           "Good job"
           })
-      output$table <- renderDataTable(getData(db_url))
+      output$table <- renderDataTable(get_data(db_url))
   })
 
-  output$table <- renderDataTable(getData(db_url))
+  output$table <- renderDataTable(get_data(db_url))
 }
 
 shinyApp(ui, server)
